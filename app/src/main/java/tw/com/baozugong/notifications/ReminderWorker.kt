@@ -10,7 +10,7 @@ import androidx.core.content.ContextCompat
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import kotlinx.coroutines.flow.first
-import tw.com.baozugong.data.AppDatabase
+import tw.com.baozugong.data.AndroidDatabaseProvider
 import tw.com.baozugong.data.AppRepository
 import tw.com.baozugong.data.SettingsStore
 import tw.com.baozugong.data.displayStatus
@@ -18,7 +18,7 @@ import java.time.LocalDate
 
 class ReminderWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
     override suspend fun doWork(): Result = try {
-        val repo = AppRepository(AppDatabase.get(applicationContext))
+        val repo = AppRepository(AndroidDatabaseProvider.get(applicationContext))
         repo.generateMissingInvoices()
         val settings = SettingsStore(applicationContext).get()
         val today = LocalDate.now()

@@ -1,12 +1,22 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
+layout.buildDirectory.set(rootProject.layout.projectDirectory.dir(".gradle/build/shared"))
+
 plugins {
     id("org.jetbrains.kotlin.multiplatform")
     id("com.android.library")
+    id("com.google.devtools.ksp")
+    id("androidx.room")
 }
 
 kotlin {
+    compilerOptions {
+        freeCompilerArgs.add("-Xexpect-actual-classes")
+    }
+
     androidTarget {
-        compilations.all {
-            kotlinOptions.jvmTarget = "17"
+        compilerOptions {
+            jvmTarget.set(JvmTarget.JVM_17)
         }
     }
 
@@ -18,10 +28,23 @@ kotlin {
     }
 
     sourceSets {
+        commonMain.dependencies {
+            api("androidx.room:room-runtime:2.8.4")
+            implementation("androidx.sqlite:sqlite-bundled:2.6.2")
+            implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
+            implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.1")
+        }
+
         commonTest.dependencies {
             implementation(kotlin("test"))
         }
     }
+}
+
+dependencies {
+    add("kspAndroid", "androidx.room:room-compiler:2.8.4")
+    add("kspIosArm64", "androidx.room:room-compiler:2.8.4")
+    add("kspIosSimulatorArm64", "androidx.room:room-compiler:2.8.4")
 }
 
 android {
@@ -36,4 +59,8 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+}
+
+room {
+    schemaDirectory("$rootDir/app/schemas")
 }

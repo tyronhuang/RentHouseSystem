@@ -14,7 +14,7 @@ import java.time.LocalDate
 import java.time.YearMonth
 
 class AppViewModel(app: Application) : AndroidViewModel(app) {
-    private val db = AppDatabase.get(app)
+    private val db = AndroidDatabaseProvider.get(app)
     val repository = AppRepository(db)
     val settingsStore = SettingsStore(app)
     val backup = BackupManager(db)

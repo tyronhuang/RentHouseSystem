@@ -11,7 +11,7 @@ data class Venue(@PrimaryKey(autoGenerate = true) val id: Long = 0, val name: St
 @Entity(
     tableName = "rooms",
     foreignKeys = [ForeignKey(entity = Venue::class, parentColumns = ["id"], childColumns = ["venueId"], onDelete = ForeignKey.RESTRICT)],
-    indices = [Index("venueId")]
+    indices = [Index("venueId")],
 )
 data class RentalRoom(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -19,7 +19,7 @@ data class RentalRoom(
     val name: String,
     val defaultRent: Long = 0,
     val status: String = RoomStatus.VACANT,
-    val note: String = ""
+    val note: String = "",
 )
 
 object RoomStatus { const val VACANT = "VACANT"; const val RENTED = "RENTED"; const val DISABLED = "DISABLED" }
@@ -31,16 +31,16 @@ data class Tenant(
     val phone: String = "",
     val lineName: String = "",
     val note: String = "",
-    val archived: Boolean = false
+    val archived: Boolean = false,
 )
 
 @Entity(
     tableName = "leases",
     foreignKeys = [
         ForeignKey(entity = RentalRoom::class, parentColumns = ["id"], childColumns = ["roomId"], onDelete = ForeignKey.RESTRICT),
-        ForeignKey(entity = Tenant::class, parentColumns = ["id"], childColumns = ["tenantId"], onDelete = ForeignKey.RESTRICT)
+        ForeignKey(entity = Tenant::class, parentColumns = ["id"], childColumns = ["tenantId"], onDelete = ForeignKey.RESTRICT),
     ],
-    indices = [Index("roomId"), Index("tenantId")]
+    indices = [Index("roomId"), Index("tenantId")],
 )
 data class Lease(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -56,7 +56,7 @@ data class Lease(
     val electricityFee: Long = 0,
     val note: String = "",
     val status: String = LeaseStatus.ACTIVE,
-    val endedAt: String? = null
+    val endedAt: String? = null,
 )
 
 object LeaseStatus { const val ACTIVE = "ACTIVE"; const val ENDED = "ENDED" }
@@ -64,7 +64,7 @@ object LeaseStatus { const val ACTIVE = "ACTIVE"; const val ENDED = "ENDED" }
 @Entity(
     tableName = "invoices",
     foreignKeys = [ForeignKey(entity = Lease::class, parentColumns = ["id"], childColumns = ["leaseId"], onDelete = ForeignKey.RESTRICT)],
-    indices = [Index("leaseId"), Index(value = ["leaseId", "billingMonth"], unique = true)]
+    indices = [Index("leaseId"), Index(value = ["leaseId", "billingMonth"], unique = true)],
 )
 data class Invoice(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -73,7 +73,7 @@ data class Invoice(
     val dueDate: String,
     val status: String = InvoiceStatus.PENDING,
     val note: String = "",
-    val createdAt: String
+    val createdAt: String,
 )
 
 object InvoiceStatus { const val PENDING = "PENDING"; const val VOID = "VOID" }
@@ -81,14 +81,14 @@ object InvoiceStatus { const val PENDING = "PENDING"; const val VOID = "VOID" }
 @Entity(
     tableName = "invoice_items",
     foreignKeys = [ForeignKey(entity = Invoice::class, parentColumns = ["id"], childColumns = ["invoiceId"], onDelete = ForeignKey.CASCADE)],
-    indices = [Index("invoiceId")]
+    indices = [Index("invoiceId")],
 )
 data class InvoiceItem(@PrimaryKey(autoGenerate = true) val id: Long = 0, val invoiceId: Long, val type: String, val title: String, val amount: Long)
 
 @Entity(
     tableName = "payments",
     foreignKeys = [ForeignKey(entity = Invoice::class, parentColumns = ["id"], childColumns = ["invoiceId"], onDelete = ForeignKey.RESTRICT)],
-    indices = [Index("invoiceId")]
+    indices = [Index("invoiceId")],
 )
 data class Payment(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -98,7 +98,7 @@ data class Payment(
     val method: String,
     val note: String = "",
     val createdAt: String,
-    val updatedAt: String
+    val updatedAt: String,
 )
 
 data class RoomListRow(val id: Long, val venueId: Long, val venueName: String, val name: String, val defaultRent: Long, val status: String, val note: String)
@@ -112,7 +112,7 @@ data class DashboardSummary(
     val overdue: Long = 0,
     val rentedRooms: Int = 0,
     val vacantRooms: Int = 0,
-    val totalRooms: Int = 0
+    val totalRooms: Int = 0,
 )
 
 fun InvoiceListRow.displayStatus(today: String): String = when {

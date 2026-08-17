@@ -4,7 +4,7 @@ import android.content.Context
 import android.net.Uri
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-import tw.com.baozugong.data.AppDatabase
+import tw.com.baozugong.data.AndroidDatabaseProvider
 import java.time.LocalDateTime
 
 class CloudBackupWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
@@ -14,7 +14,7 @@ class CloudBackupWorker(context: Context, params: WorkerParameters) : CoroutineW
         val password = store.password()
         if (!state.connected || password == null || !state.autoBackup) return Result.success()
         return runCatching {
-            BackupManager(AppDatabase.get(applicationContext)).exportToFolder(
+            BackupManager(AndroidDatabaseProvider.get(applicationContext)).exportToFolder(
                 applicationContext.contentResolver,
                 Uri.parse(state.folderUri),
                 password,
