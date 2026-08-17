@@ -9,19 +9,16 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.flow.flowOf
-import tw.com.baozugong.AppViewModel
+import tw.com.baozugong.AppController
 import tw.com.baozugong.data.*
-import java.time.LocalDate
-import java.time.YearMonth
 
 @Composable
-fun BillsScreen(vm:AppViewModel,onMessage:(String)->Unit,onShare:(String)->Unit) {
-    val all by vm.invoices.collectAsState();var month by remember{mutableStateOf(YearMonth.now())};var selected by remember{mutableStateOf<InvoiceListRow?>(null)};var venue by remember{mutableStateOf("全部")}
-    val venues=listOf("全部")+all.map{it.venueName}.distinct();val rows=all.filter{it.billingMonth==month.toString()&&(venue=="全部"||it.venueName==venue)};val today=LocalDate.now().toString()
+fun BillsScreen(vm:AppController,onMessage:(String)->Unit,onShare:(String)->Unit) {
+    val all by vm.invoices.collectAsState();var month by remember{mutableStateOf(currentMonth())};var selected by remember{mutableStateOf<InvoiceListRow?>(null)};var venue by remember{mutableStateOf("全部")}
+    val venues=listOf("全部")+all.map{it.venueName}.distinct();val rows=all.filter{it.billingMonth==month&&(venue=="全部"||it.venueName==venue)};val today=currentDate()
     LazyColumn(Modifier.fillMaxSize(),contentPadding=PaddingValues(bottom=24.dp)) {
         item { ScreenTitle("收租帳簿","帳單、加收項目與收款") }
-        item { Row(Modifier.fillMaxWidth().padding(horizontal=16.dp),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=androidx.compose.ui.Alignment.CenterVertically){TextButton(onClick={month=month.minusMonths(1)}){Text("‹ 上月")};Text(month.toString(),fontWeight=FontWeight.Bold);TextButton(onClick={month=month.plusMonths(1)}){Text("下月 ›")}} }
+        item { Row(Modifier.fillMaxWidth().padding(horizontal=16.dp),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=androidx.compose.ui.Alignment.CenterVertically){TextButton(onClick={month=shiftMonth(month,-1)}){Text("‹ 上月")};Text(month,fontWeight=FontWeight.Bold);TextButton(onClick={month=shiftMonth(month,1)}){Text("下月 ›")}} }
         item { Row(Modifier.padding(horizontal=16.dp).fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(6.dp)){venues.take(4).forEach{v->FilterChip(venue==v,{venue=v},{Text(v)},Modifier.weight(1f))}} }
         item { val valid=rows.filter{it.rawStatus!=InvoiceStatus.VOID};Row(Modifier.padding(16.dp),horizontalArrangement=Arrangement.spacedBy(8.dp)){MetricCard("應收",money(valid.sumOf{it.total}),Modifier.weight(1f));MetricCard("已收",money(valid.sumOf{minOf(it.paid,it.total)}),Modifier.weight(1f));MetricCard("未收",money(valid.sumOf{(it.total-it.paid).coerceAtLeast(0)}),Modifier.weight(1f))} }
         if(rows.isEmpty()) item{EmptyHint("這個月份尚無帳單")}
@@ -34,7 +31,7 @@ fun BillsScreen(vm:AppViewModel,onMessage:(String)->Unit,onShare:(String)->Unit)
     if(selected!=null) InvoiceDialog(vm,selected!!,{selected=null},onMessage,onShare)
 }
 
-@Composable private fun InvoiceDialog(vm:AppViewModel,bill:InvoiceListRow,onDismiss:()->Unit,onMessage:(String)->Unit,onShare:(String)->Unit) {
+@Composable private fun InvoiceDialog(vm:AppController,bill:InvoiceListRow,onDismiss:()->Unit,onMessage:(String)->Unit,onShare:(String)->Unit) {
     val itemsFlow=remember(bill.id){vm.repository.invoiceItems(bill.id)};val paymentsFlow=remember(bill.id){vm.repository.payments(bill.id)};val chargeItems by itemsFlow.collectAsState(emptyList());val payments by paymentsFlow.collectAsState(emptyList())
     var addCharge by remember{mutableStateOf(false)};var addPayment by remember{mutableStateOf(false)};var editItem by remember{mutableStateOf<InvoiceItem?>(null)};var editPayment by remember{mutableStateOf<Payment?>(null)};var confirmVoid by remember{mutableStateOf(false)}
     val total=chargeItems.sumOf{it.amount};val paid=payments.sumOf{it.amount};val remaining=(total-paid).coerceAtLeast(0)
@@ -47,4 +44,4 @@ fun BillsScreen(vm:AppViewModel,onMessage:(String)->Unit,onShare:(String)->Unit)
 }
 
 @Composable private fun ChargeDialog(value:InvoiceItem?,onDismiss:()->Unit,onSave:(String,Long)->Unit){var title by remember{mutableStateOf(value?.title?:"水費")};var amount by remember{mutableStateOf(value?.amount?.toString()?:"")};AlertDialog(onDismissRequest=onDismiss,title={Text(if(value==null)"新增費用" else "調整費用")},text={Column(verticalArrangement=Arrangement.spacedBy(8.dp)){FormField(title,{title=it},"項目（水費、電費等）");FormField(amount,{amount=it},"金額",numeric=true)}},dismissButton={TextButton(onClick=onDismiss){Text("取消")}},confirmButton={Button(enabled=title.isNotBlank()&&amount.asLong()>=0,onClick={onSave(title.trim(),amount.asLong())}){Text("儲存")}})}
-@Composable private fun PaymentDialog(value:Payment?,maximum:Long,onDismiss:()->Unit,onSave:(Long,String,String,String)->Unit){var amount by remember{mutableStateOf(value?.amount?.toString()?:maximum.toString())};var date by remember{mutableStateOf(value?.paidDate?:LocalDate.now().toString())};var method by remember{mutableStateOf(value?.method?:"轉帳")};var note by remember{mutableStateOf(value?.note?:"")};val valid=amount.asLong() in 1..maximum&&runCatching{LocalDate.parse(date)}.isSuccess;AlertDialog(onDismissRequest=onDismiss,title={Text(if(value==null)"登記收款" else "更正收款")},text={Column(verticalArrangement=Arrangement.spacedBy(8.dp)){FormField(amount,{amount=it},"金額（最多 ${money(maximum)}）",numeric=true);FormField(date,{date=it},"收款日 YYYY-MM-DD");Text("方式");Row{listOf("轉帳","現金","其他").forEach{FilterChip(method==it,{method=it},{Text(it)},Modifier.padding(end=6.dp))}};FormField(note,{note=it},"備註")}},dismissButton={TextButton(onClick=onDismiss){Text("取消")}},confirmButton={Button(enabled=valid,onClick={onSave(amount.asLong(),date,method,note.trim())}){Text("儲存")}})}
+@Composable private fun PaymentDialog(value:Payment?,maximum:Long,onDismiss:()->Unit,onSave:(Long,String,String,String)->Unit){var amount by remember{mutableStateOf(value?.amount?.toString()?:maximum.toString())};var date by remember{mutableStateOf(value?.paidDate?:currentDate())};var method by remember{mutableStateOf(value?.method?:"轉帳")};var note by remember{mutableStateOf(value?.note?:"")};val valid=amount.asLong() in 1..maximum&&isValidDate(date);AlertDialog(onDismissRequest=onDismiss,title={Text(if(value==null)"登記收款" else "更正收款")},text={Column(verticalArrangement=Arrangement.spacedBy(8.dp)){FormField(amount,{amount=it},"金額（最多 ${money(maximum)}）",numeric=true);DatePickerField("收款日",date,{date=it});Text("方式");Row{listOf("轉帳","現金","其他").forEach{FilterChip(method==it,{method=it},{Text(it)},Modifier.padding(end=6.dp))}};FormField(note,{note=it},"備註")}},dismissButton={TextButton(onClick=onDismiss){Text("取消")}},confirmButton={Button(enabled=valid,onClick={onSave(amount.asLong(),date,method,note.trim())}){Text("儲存")}})}

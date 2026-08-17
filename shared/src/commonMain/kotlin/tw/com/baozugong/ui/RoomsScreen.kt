@@ -9,11 +9,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import tw.com.baozugong.AppViewModel
+import tw.com.baozugong.AppController
 import tw.com.baozugong.data.*
 
 @Composable
-fun RoomsScreen(vm:AppViewModel,onMessage:(String)->Unit) {
+fun RoomsScreen(vm:AppController,onMessage:(String)->Unit) {
     val venues by vm.venues.collectAsState();val rooms by vm.rooms.collectAsState()
     var venueDialog by remember { mutableStateOf<Venue?>(null) };var showNewVenue by remember { mutableStateOf(false) }
     var roomDialog by remember { mutableStateOf<RoomListRow?>(null) };var showNewRoom by remember { mutableStateOf(false) }

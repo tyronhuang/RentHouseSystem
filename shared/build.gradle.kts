@@ -7,6 +7,8 @@ plugins {
     id("com.android.library")
     id("com.google.devtools.ksp")
     id("androidx.room")
+    id("org.jetbrains.compose")
+    id("org.jetbrains.kotlin.plugin.compose")
 }
 
 kotlin {
@@ -29,6 +31,10 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
+            implementation(compose.runtime)
+            implementation(compose.foundation)
+            implementation(compose.material3)
+            implementation(compose.ui)
             api("androidx.room:room-runtime:2.8.4")
             implementation("androidx.sqlite:sqlite-bundled:2.6.2")
             implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
