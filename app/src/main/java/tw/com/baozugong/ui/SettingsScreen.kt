@@ -9,9 +9,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import tw.com.baozugong.AppViewModel
 import tw.com.baozugong.data.AppSettings
+import tw.com.baozugong.backup.CloudBackupState
 
 @Composable
-fun SettingsScreen(vm:AppViewModel,onExportBackup:(String)->Unit,onImportBackup:()->Unit,onExportCsv:()->Unit,onMessage:(String)->Unit) {
+fun SettingsScreen(vm:AppViewModel,onExportBackup:(String)->Unit,onImportBackup:()->Unit,onExportCsv:()->Unit,cloudState:CloudBackupState,onLinkCloud:()->Unit,onCloudBackupNow:()->Unit,onSetCloudAuto:(Boolean)->Unit,onDisconnectCloud:()->Unit,onMessage:(String)->Unit) {
     var settings by remember{mutableStateOf(vm.settingsStore.get())};var editSettings by remember{mutableStateOf(false)};var passwordDialog by remember{mutableStateOf(false)};var clearStep by remember{mutableIntStateOf(0)}
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom=24.dp)) {
         ScreenTitle("設定與資料","所有資料只保存在這支手機")
@@ -25,6 +26,17 @@ fun SettingsScreen(vm:AppViewModel,onExportBackup:(String)->Unit,onImportBackup:
             ListItem(headlineContent={Text("加密完整備份")},supportingContent={Text("換機時可完整還原所有資料")},trailingContent={Button(onClick={passwordDialog=true}){Text("匯出")}})
             ListItem(headlineContent={Text("還原完整備份")},supportingContent={Text("會先顯示內容並要求確認")},trailingContent={OutlinedButton(onClick=onImportBackup){Text("匯入")}})
             ListItem(headlineContent={Text("Excel 相容報表")},supportingContent={Text("匯出全部月份收租明細 CSV")},trailingContent={OutlinedButton(onClick=onExportCsv){Text("CSV")}})
+        }
+        SettingsSection("Google Drive 雲端備份") {
+            if (!cloudState.connected) {
+                ListItem(headlineContent={Text("尚未連結")},supportingContent={Text("選擇 Google Drive 中的資料夾，只授權該資料夾")})
+                Button(onClick=onLinkCloud,modifier=Modifier.fillMaxWidth().padding(16.dp)){Text("連結 Google Drive 資料夾")}
+            } else {
+                ListItem(headlineContent={Text("已連結 Google Drive")},supportingContent={Text(cloudState.lastBackupAt?.let{"上次成功：${it.take(16).replace('T',' ')}"}?:"尚未完成備份")},trailingContent={Button(onClick=onCloudBackupNow){Text("立即備份")}})
+                Row(Modifier.fillMaxWidth().padding(horizontal=16.dp),verticalAlignment=androidx.compose.ui.Alignment.CenterVertically,horizontalArrangement=Arrangement.SpaceBetween){Column(Modifier.weight(1f)){Text("每週自動備份");Text("由 Google Drive App 負責同步上傳",style=MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.onSurfaceVariant)};Switch(cloudState.autoBackup,onSetCloudAuto)}
+                if(!cloudState.lastError.isNullOrBlank()) Text("上次錯誤：${cloudState.lastError}",Modifier.padding(16.dp),color=MaterialTheme.colorScheme.error)
+                Row(Modifier.fillMaxWidth().padding(8.dp),horizontalArrangement=Arrangement.SpaceBetween){TextButton(onClick=onImportBackup){Text("從雲端檔案還原")};TextButton(onClick=onDisconnectCloud){Text("解除連結",color=MaterialTheme.colorScheme.error)}}
+            }
         }
         SettingsSection("關於") {
             ListItem(headlineContent={Text("包租公")},supportingContent={Text("Android 單機版 · 無網路權限")},trailingContent={Text("1.0.0")})

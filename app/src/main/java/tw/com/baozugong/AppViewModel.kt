@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import tw.com.baozugong.backup.BackupManager
+import tw.com.baozugong.backup.CloudBackupStore
 import tw.com.baozugong.data.*
 import java.time.LocalDate
 import java.time.YearMonth
@@ -17,6 +18,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     val repository = AppRepository(db)
     val settingsStore = SettingsStore(app)
     val backup = BackupManager(db)
+    val cloudBackup = CloudBackupStore(app)
     val venues = repository.venues.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
     val rooms = repository.rooms.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
     val tenants = repository.tenants.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())

@@ -2,6 +2,7 @@ package tw.com.baozugong.backup
 
 import android.content.ContentResolver
 import android.net.Uri
+import android.provider.DocumentsContract
 import androidx.room.withTransaction
 import org.json.JSONArray
 import org.json.JSONObject
@@ -24,6 +25,18 @@ class BackupManager(private val db: AppDatabase) {
         require(password.length >= 6) { "備份密碼至少需要 6 個字元" }
         val json = snapshot().toString().toByteArray(Charsets.UTF_8)
         resolver.openOutputStream(uri)?.use { it.write(encrypt(json, password)) } ?: error("無法寫入備份檔")
+    }
+
+    suspend fun exportToFolder(resolver: ContentResolver, folderUri: Uri, password: String, automatic: Boolean): Uri {
+        require(password.length >= 6) { "備份密碼至少需要 6 個字元" }
+        val parentId = DocumentsContract.getTreeDocumentId(folderUri)
+        val parent = DocumentsContract.buildDocumentUriUsingTree(folderUri, parentId)
+        val stamp = java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd_HHmm").format(LocalDateTime.now())
+        val prefix = if (automatic) "包租公_自動備份" else "包租公_雲端備份"
+        val target = DocumentsContract.createDocument(resolver, parent, "application/octet-stream", "${prefix}_${stamp}.bzg")
+            ?: error("無法在選擇的雲端資料夾建立備份")
+        export(resolver, target, password)
+        return target
     }
 
     suspend fun preview(resolver: ContentResolver, uri: Uri, password: String): BackupPreview {

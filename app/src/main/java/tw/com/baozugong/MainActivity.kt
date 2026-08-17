@@ -45,6 +45,8 @@ private fun MainApp(vm: AppViewModel) {
     var importUri by remember { mutableStateOf<android.net.Uri?>(null) }
     var importPassword by remember { mutableStateOf<String?>(null) }
     var preview by remember { mutableStateOf<tw.com.baozugong.backup.BackupPreview?>(null) }
+    var cloudState by remember { mutableStateOf(vm.cloudBackup.state()) }
+    var pendingCloudFolder by remember { mutableStateOf<android.net.Uri?>(null) }
     val scope = rememberCoroutineScope()
     val context = androidx.compose.ui.platform.LocalContext.current
     val invoices by vm.invoices.collectAsState()
@@ -56,6 +58,13 @@ private fun MainApp(vm: AppViewModel) {
         if (uri != null) scope.launch { runCatching { vm.backup.exportCsv(context.contentResolver, uri, invoices) }.onSuccess { message="CSV 匯出完成" }.onFailure { message=it.message } }
     }
     val backupImport = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> if (uri != null) importUri=uri }
+    val cloudFolderPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+        if (uri != null) {
+            runCatching { context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION) }
+                .onSuccess { pendingCloudFolder=uri }
+                .onFailure { message="無法取得雲端資料夾存取權：${it.message}" }
+        }
+    }
     val notificationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
 
     LaunchedEffect(Unit) { if (android.os.Build.VERSION.SDK_INT >= 33) notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS) }
@@ -78,7 +87,21 @@ private fun MainApp(vm: AppViewModel) {
                 MainTab.SETTINGS -> SettingsScreen(vm,
                     onExportBackup={password -> exportPassword=password;backupExport.launch("包租公備份_${LocalDateTime.now().toLocalDate()}.bzg")},
                     onImportBackup={backupImport.launch(arrayOf("application/octet-stream","*/*"))},
-                    onExportCsv={csvExport.launch("包租公收租報表.csv")}, onMessage={message=it})
+                    onExportCsv={csvExport.launch("包租公收租報表.csv")},
+                    cloudState=cloudState,
+                    onLinkCloud={cloudFolderPicker.launch(null)},
+                    onCloudBackupNow={scope.launch {
+                        val state=vm.cloudBackup.state();val password=vm.cloudBackup.password()
+                        runCatching { require(state.connected&&password!=null);vm.backup.exportToFolder(context.contentResolver,android.net.Uri.parse(state.folderUri),password,false) }
+                            .onSuccess { vm.cloudBackup.markSuccess(LocalDateTime.now().toString());cloudState=vm.cloudBackup.state();message="Google Drive 備份完成" }
+                            .onFailure { vm.cloudBackup.markError(it.message?:"雲端備份失敗");cloudState=vm.cloudBackup.state();message=it.message?:"雲端備份失敗" }
+                    }},
+                    onSetCloudAuto={enabled->vm.cloudBackup.setAutoBackup(enabled);cloudState=vm.cloudBackup.state()},
+                    onDisconnectCloud={
+                        cloudState.folderUri?.let { uri->runCatching{context.contentResolver.releasePersistableUriPermission(android.net.Uri.parse(uri),Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)} }
+                        vm.cloudBackup.disconnect();cloudState=vm.cloudBackup.state();message="已解除 Google Drive 連結"
+                    },
+                    onMessage={message=it})
             }
         }
     }
@@ -91,6 +114,20 @@ private fun MainApp(vm: AppViewModel) {
         val uri=importUri!!;val password=importPassword!!;preview=null
         scope.launch { runCatching { vm.backup.restore(context.contentResolver,uri,password) }.onSuccess { message="還原完成" }.onFailure { message=it.message };importUri=null;importPassword=null }
     }){Text("確定還原")}})
+    if (pendingCloudFolder != null) PasswordDialog("設定雲端備份密碼", onDismiss={pendingCloudFolder=null}, onConfirm={password->
+        val folder=pendingCloudFolder!!;pendingCloudFolder=null
+        scope.launch {
+            runCatching {
+                vm.cloudBackup.connect(folder,password)
+                vm.cloudBackup.setAutoBackup(true)
+                vm.backup.exportToFolder(context.contentResolver,folder,password,false)
+            }.onSuccess {
+                vm.cloudBackup.markSuccess(LocalDateTime.now().toString());cloudState=vm.cloudBackup.state();message="Google Drive 已連結，首次備份完成"
+            }.onFailure {
+                vm.cloudBackup.markError(it.message?:"雲端備份失敗");cloudState=vm.cloudBackup.state();message=it.message?:"雲端備份失敗"
+            }
+        }
+    })
 }
 
 @Composable

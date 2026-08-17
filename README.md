@@ -14,6 +14,7 @@
 - 透過 Android 分享選單傳送催繳文字
 - CSV 收租報表
 - PBKDF2＋AES-GCM 加密完整備份及換機還原
+- 透過 Android Storage Access Framework 連結 Google Drive 資料夾，支援立即與每週自動加密備份
 
 ## 技術
 
@@ -33,4 +34,4 @@ Debug APK 會產生於 `app/build/outputs/apk/debug/app-debug.apk`。
 
 ## 隱私
 
-App 未宣告網路權限。資料只有在使用者主動透過 Android 系統檔案選擇器匯出備份／CSV，或透過分享選單傳送催繳文字時才會離開 App。
+App 未宣告網路權限。Google Drive 備份透過使用者明確授權的 Android 文件提供者資料夾寫入，實際雲端同步由 Google Drive App 處理；除此之外，資料只有在使用者主動匯出備份／CSV 或分享催繳文字時才會離開 App。

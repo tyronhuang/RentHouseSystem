@@ -5,6 +5,7 @@ import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import tw.com.baozugong.notifications.ReminderWorker
+import tw.com.baozugong.backup.CloudBackupStore
 import java.util.concurrent.TimeUnit
 
 class BaoZuGongApplication : Application() {
@@ -12,5 +13,6 @@ class BaoZuGongApplication : Application() {
         super.onCreate()
         val request = PeriodicWorkRequestBuilder<ReminderWorker>(24, TimeUnit.HOURS).build()
         WorkManager.getInstance(this).enqueueUniquePeriodicWork("daily_reminders", ExistingPeriodicWorkPolicy.UPDATE, request)
+        CloudBackupStore.schedule(this, CloudBackupStore(this).state().autoBackup)
     }
 }
