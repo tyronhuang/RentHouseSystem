@@ -21,14 +21,15 @@ object PhoneRules {
 
     fun tailFromStored(phone: String): String {
         val digits = phone.filter(Char::isDigit)
-        return when {
-            digits.startsWith("09") -> digits.drop(2).take(8)
-            else -> digits.take(8)
-        }
+        return if (digits.startsWith("09")) digits.drop(2).take(8) else digits.take(8)
     }
 
     fun formatStored(phone: String): String {
         val digits = phone.filter(Char::isDigit)
-        return if (digits.length == 10 && digits.startsWith("09")) "${digits.take(4)}-${digits.drop(4)}" else phone
+        return if (digits.length == 10 && digits.startsWith("09")) {
+            "${digits.take(4)}-${digits.drop(4)}"
+        } else {
+            phone
+        }
     }
 }

@@ -14,3 +14,4 @@ dependencyResolutionManagement {
 }
 rootProject.name = "BaoZuGong"
 include(":app")
+include(":shared")
