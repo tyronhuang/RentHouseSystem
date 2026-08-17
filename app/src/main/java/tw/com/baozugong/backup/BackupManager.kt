@@ -3,7 +3,8 @@ package tw.com.baozugong.backup
 import android.content.ContentResolver
 import android.net.Uri
 import android.provider.DocumentsContract
-import androidx.room.withTransaction
+import androidx.room.immediateTransaction
+import androidx.room.useWriterConnection
 import org.json.JSONArray
 import org.json.JSONObject
 import tw.com.baozugong.data.*
@@ -47,15 +48,17 @@ class BackupManager(private val db: AppDatabase) {
     suspend fun restore(resolver: ContentResolver, uri: Uri, password: String) {
         val root = read(resolver, uri, password)
         require(root.getInt("version") in 1..2) { "不支援此備份版本" }
-        db.withTransaction {
-            dao.clearAll()
-            dao.restoreVenues(root.array("venues").objects().map { Venue(it.long("id"),it.str("name"),it.bool("active"),it.str("note")) })
-            dao.restoreRooms(root.array("rooms").objects().map { RentalRoom(it.long("id"),it.long("venueId"),it.str("name"),it.long("defaultRent"),it.str("status"),it.str("note")) })
-            dao.restoreTenants(root.array("tenants").objects().map { Tenant(it.long("id"),it.str("name"),it.str("phone"),it.str("lineName"),it.str("note"),it.bool("archived")) })
-            dao.restoreLeases(root.array("leases").objects().map { Lease(id=it.long("id"),roomId=it.long("roomId"),tenantId=it.long("tenantId"),startDate=it.str("startDate"),endDate=it.str("endDate"),monthlyRent=it.long("monthlyRent"),dueDay=it.int("dueDay"),deposit=it.long("deposit"),waterFee=it.optLongOrZero("waterFee"),managementFee=it.optLongOrZero("managementFee"),electricityFee=it.optLongOrZero("electricityFee"),note=it.str("note"),status=it.str("status"),endedAt=it.optString("endedAt").ifBlank { null }) })
-            dao.restoreInvoices(root.array("invoices").objects().map { Invoice(it.long("id"),it.long("leaseId"),it.str("billingMonth"),it.str("dueDate"),it.str("status"),it.str("note"),it.str("createdAt")) })
-            dao.restoreInvoiceItems(root.array("items").objects().map { InvoiceItem(it.long("id"),it.long("invoiceId"),it.str("type"),it.str("title"),it.long("amount")) })
-            dao.restorePayments(root.array("payments").objects().map { Payment(it.long("id"),it.long("invoiceId"),it.long("amount"),it.str("paidDate"),it.str("method"),it.str("note"),it.str("createdAt"),it.str("updatedAt")) })
+        db.useWriterConnection { connection ->
+            connection.immediateTransaction {
+                dao.clearAll()
+                dao.restoreVenues(root.array("venues").objects().map { Venue(it.long("id"),it.str("name"),it.bool("active"),it.str("note")) })
+                dao.restoreRooms(root.array("rooms").objects().map { RentalRoom(it.long("id"),it.long("venueId"),it.str("name"),it.long("defaultRent"),it.str("status"),it.str("note")) })
+                dao.restoreTenants(root.array("tenants").objects().map { Tenant(it.long("id"),it.str("name"),it.str("phone"),it.str("lineName"),it.str("note"),it.bool("archived")) })
+                dao.restoreLeases(root.array("leases").objects().map { Lease(id=it.long("id"),roomId=it.long("roomId"),tenantId=it.long("tenantId"),startDate=it.str("startDate"),endDate=it.str("endDate"),monthlyRent=it.long("monthlyRent"),dueDay=it.int("dueDay"),deposit=it.long("deposit"),waterFee=it.optLongOrZero("waterFee"),managementFee=it.optLongOrZero("managementFee"),electricityFee=it.optLongOrZero("electricityFee"),note=it.str("note"),status=it.str("status"),endedAt=it.optString("endedAt").ifBlank { null }) })
+                dao.restoreInvoices(root.array("invoices").objects().map { Invoice(it.long("id"),it.long("leaseId"),it.str("billingMonth"),it.str("dueDate"),it.str("status"),it.str("note"),it.str("createdAt")) })
+                dao.restoreInvoiceItems(root.array("items").objects().map { InvoiceItem(it.long("id"),it.long("invoiceId"),it.str("type"),it.str("title"),it.long("amount")) })
+                dao.restorePayments(root.array("payments").objects().map { Payment(it.long("id"),it.long("invoiceId"),it.long("amount"),it.str("paidDate"),it.str("method"),it.str("note"),it.str("createdAt"),it.str("updatedAt")) })
+            }
         }
     }
 
