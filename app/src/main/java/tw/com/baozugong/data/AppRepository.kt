@@ -1,0 +1,69 @@
+package tw.com.baozugong.data
+
+import androidx.room.withTransaction
+import kotlinx.coroutines.flow.Flow
+import tw.com.baozugong.domain.BillingRules
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.YearMonth
+
+class AppRepository(private val db: AppDatabase) {
+    private val dao = db.dao()
+    val venues = dao.venues()
+    val rooms = dao.rooms()
+    val tenants = dao.tenants()
+    val leases = dao.leases()
+    val invoices = dao.invoices()
+
+    suspend fun saveVenue(value: Venue) { if (value.id == 0L) dao.insertVenue(value) else dao.updateVenue(value) }
+    suspend fun saveRoom(value: RentalRoom) { if (value.id == 0L) dao.insertRoom(value) else dao.updateRoom(value) }
+    suspend fun saveTenant(value: Tenant): Long = if (value.id == 0L) dao.insertTenant(value) else { dao.updateTenant(value); value.id }
+
+    suspend fun createLease(value: Lease) = db.withTransaction {
+        val room = dao.room(value.roomId) ?: error("找不到房間")
+        require(room.status == RoomStatus.VACANT) { "此房間目前不可出租" }
+        dao.insertLease(value)
+        dao.setRoomStatus(value.roomId, RoomStatus.RENTED)
+    }
+
+    suspend fun endLease(leaseId: Long, date: LocalDate = LocalDate.now()) = db.withTransaction {
+        val lease = dao.lease(leaseId) ?: return@withTransaction
+        dao.updateLease(lease.copy(status = LeaseStatus.ENDED, endedAt = date.toString()))
+        dao.setRoomStatus(lease.roomId, RoomStatus.VACANT)
+    }
+
+    suspend fun renewLease(oldLeaseId: Long, newEndDate: String) {
+        val old = dao.lease(oldLeaseId) ?: return
+        dao.updateLease(old.copy(endDate = newEndDate, status = LeaseStatus.ACTIVE, endedAt = null))
+    }
+
+    suspend fun generateMissingInvoices(today: LocalDate = LocalDate.now()) {
+        dao.activeLeases().forEach { lease ->
+            BillingRules.monthsToGenerate(lease.startDate, lease.endDate, today).forEach { month ->
+                db.withTransaction {
+                    val id = dao.insertInvoice(Invoice(
+                        leaseId = lease.id,
+                        billingMonth = month.toString(),
+                        dueDate = BillingRules.dueDate(month, lease.dueDay).toString(),
+                        createdAt = LocalDateTime.now().toString()
+                    ))
+                    if (id > 0) dao.insertInvoiceItem(InvoiceItem(invoiceId = id, type = "RENT", title = "月租", amount = lease.monthlyRent))
+                }
+            }
+        }
+    }
+
+    fun invoiceItems(invoiceId: Long): Flow<List<InvoiceItem>> = dao.invoiceItems(invoiceId)
+    fun payments(invoiceId: Long): Flow<List<Payment>> = dao.payments(invoiceId)
+    suspend fun addCharge(invoiceId: Long, title: String, amount: Long) = dao.insertInvoiceItem(InvoiceItem(invoiceId = invoiceId, type = "EXTRA", title = title, amount = amount))
+    suspend fun updateCharge(value: InvoiceItem) = dao.updateInvoiceItem(value)
+    suspend fun addPayment(invoiceId: Long, amount: Long, date: String, method: String, note: String) {
+        val now = LocalDateTime.now().toString()
+        dao.insertPayment(Payment(invoiceId = invoiceId, amount = amount, paidDate = date, method = method, note = note, createdAt = now, updatedAt = now))
+    }
+    suspend fun updatePayment(value: Payment) = dao.updatePayment(value.copy(updatedAt = LocalDateTime.now().toString()))
+    suspend fun voidInvoice(invoiceId: Long) = dao.voidInvoice(invoiceId)
+    suspend fun clearAll() = dao.clearAll()
+    fun daoForBackup() = dao
+    fun database() = db
+}
