@@ -33,14 +33,21 @@ class AppRepository(private val db: AppDatabase) {
     }
 
     suspend fun renewLease(oldLeaseId: Long, newEndDate: String) {
-        val old = dao.lease(oldLeaseId) ?: return
-        dao.updateLease(old.copy(endDate = newEndDate, status = LeaseStatus.ACTIVE, endedAt = null))
+        db.withTransaction {
+            val old = dao.lease(oldLeaseId) ?: return@withTransaction
+            require(old.status == LeaseStatus.ACTIVE) { "只能續約有效租約" }
+            val newStart = BillingRules.renewalStart(old.endDate).toString()
+            require(LocalDate.parse(newEndDate) >= LocalDate.parse(newStart)) { "新到期日必須晚於原租約" }
+            dao.updateLease(old.copy(status = LeaseStatus.ENDED, endedAt = old.endDate))
+            dao.insertLease(old.copy(id = 0, startDate = newStart, endDate = newEndDate, status = LeaseStatus.ACTIVE, endedAt = null, note = listOf(old.note, "續約自租約 #${old.id}").filter { it.isNotBlank() }.joinToString(" · ")))
+        }
     }
 
     suspend fun generateMissingInvoices(today: LocalDate = LocalDate.now()) {
         dao.activeLeases().forEach { lease ->
             BillingRules.monthsToGenerate(lease.startDate, lease.endDate, today).forEach { month ->
                 db.withTransaction {
+                    if (dao.activeInvoiceCountForRoomMonth(lease.roomId, month.toString()) > 0) return@withTransaction
                     val id = dao.insertInvoice(Invoice(
                         leaseId = lease.id,
                         billingMonth = month.toString(),

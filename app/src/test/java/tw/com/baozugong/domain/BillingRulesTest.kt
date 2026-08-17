@@ -15,4 +15,7 @@ class BillingRulesTest {
     @Test fun clampsDueDayForShortMonth() {
         assertEquals(LocalDate.of(2026,2,28),BillingRules.dueDate(YearMonth.of(2026,2),31))
     }
+    @Test fun renewalStartsTheDayAfterPreviousLease() {
+        assertEquals(LocalDate.of(2027,6,15), BillingRules.renewalStart("2027-06-14"))
+    }
 }

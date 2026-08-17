@@ -13,4 +13,6 @@ object BillingRules {
     }
 
     fun dueDate(month: YearMonth, dueDay: Int): LocalDate = month.atDay(dueDay.coerceIn(1, month.lengthOfMonth()))
+
+    fun renewalStart(previousEndDate: String): LocalDate = LocalDate.parse(previousEndDate).plusDays(1)
 }

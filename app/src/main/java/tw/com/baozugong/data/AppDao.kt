@@ -51,6 +51,8 @@ interface AppDao {
     """) fun invoices(): Flow<List<InvoiceListRow>>
     @Query("SELECT * FROM invoices ORDER BY id") suspend fun allInvoices(): List<Invoice>
     @Query("SELECT * FROM invoices WHERE id=:id") suspend fun invoice(id: Long): Invoice?
+    @Query("SELECT COUNT(*) FROM invoices i JOIN leases l ON l.id=i.leaseId WHERE l.roomId=:roomId AND i.billingMonth=:billingMonth AND i.status!='VOID'")
+    suspend fun activeInvoiceCountForRoomMonth(roomId: Long, billingMonth: String): Int
     @Insert(onConflict = OnConflictStrategy.IGNORE) suspend fun insertInvoice(value: Invoice): Long
     @Update suspend fun updateInvoice(value: Invoice)
     @Query("UPDATE invoices SET status='VOID' WHERE id=:id") suspend fun voidInvoice(id: Long)
