@@ -10,6 +10,7 @@ import androidx.compose.ui.unit.dp
 import tw.com.baozugong.AppViewModel
 import tw.com.baozugong.data.AppSettings
 import tw.com.baozugong.backup.CloudBackupState
+import tw.com.baozugong.BuildConfig
 
 @Composable
 fun SettingsScreen(vm:AppViewModel,onExportBackup:(String)->Unit,onImportBackup:()->Unit,onExportCsv:()->Unit,cloudState:CloudBackupState,onLinkCloud:()->Unit,onCloudBackupNow:()->Unit,onSetCloudAuto:(Boolean)->Unit,onDisconnectCloud:()->Unit,darkTheme:Boolean,onThemeChange:(Boolean)->Unit,onMessage:(String)->Unit) {
@@ -51,7 +52,7 @@ fun SettingsScreen(vm:AppViewModel,onExportBackup:(String)->Unit,onImportBackup:
             }
         }
         SettingsSection("關於") {
-            ListItem(headlineContent={Text("包租公")},supportingContent={Text("Android 單機版 · 無網路權限")},trailingContent={Text("1.0.0")})
+            ListItem(headlineContent={Text("包租公")},supportingContent={Text("Android 單機版 · 無網路權限")},trailingContent={Text(BuildConfig.VERSION_NAME)})
         }
         SettingsSection("危險操作") {
             Text("清除後無法復原，請先匯出完整備份。",Modifier.padding(horizontal=16.dp),color=MaterialTheme.colorScheme.error)

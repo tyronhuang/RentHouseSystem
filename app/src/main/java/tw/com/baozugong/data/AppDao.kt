@@ -30,7 +30,7 @@ interface AppDao {
 
     @Query("""
         SELECT l.id,l.roomId,r.name roomName,v.name venueName,l.tenantId,t.name tenantName,t.phone tenantPhone,
-        l.startDate,l.endDate,l.monthlyRent,l.dueDay,l.deposit,l.note,l.status,l.endedAt
+        l.startDate,l.endDate,l.monthlyRent,l.dueDay,l.deposit,l.waterFee,l.managementFee,l.electricityFee,l.note,l.status,l.endedAt
         FROM leases l JOIN rooms r ON r.id=l.roomId JOIN venues v ON v.id=r.venueId JOIN tenants t ON t.id=l.tenantId
         ORDER BY l.status,l.endDate
     """) fun leases(): Flow<List<LeaseListRow>>

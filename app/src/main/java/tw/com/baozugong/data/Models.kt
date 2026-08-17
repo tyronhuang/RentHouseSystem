@@ -51,6 +51,9 @@ data class Lease(
     val monthlyRent: Long,
     val dueDay: Int,
     val deposit: Long = 0,
+    val waterFee: Long = 0,
+    val managementFee: Long = 0,
+    val electricityFee: Long = 0,
     val note: String = "",
     val status: String = LeaseStatus.ACTIVE,
     val endedAt: String? = null
@@ -99,7 +102,7 @@ data class Payment(
 )
 
 data class RoomListRow(val id: Long, val venueId: Long, val venueName: String, val name: String, val defaultRent: Long, val status: String, val note: String)
-data class LeaseListRow(val id: Long, val roomId: Long, val roomName: String, val venueName: String, val tenantId: Long, val tenantName: String, val tenantPhone: String, val startDate: String, val endDate: String, val monthlyRent: Long, val dueDay: Int, val deposit: Long, val note: String, val status: String, val endedAt: String?)
+data class LeaseListRow(val id: Long, val roomId: Long, val roomName: String, val venueName: String, val tenantId: Long, val tenantName: String, val tenantPhone: String, val startDate: String, val endDate: String, val monthlyRent: Long, val dueDay: Int, val deposit: Long, val waterFee: Long, val managementFee: Long, val electricityFee: Long, val note: String, val status: String, val endedAt: String?)
 data class InvoiceListRow(val id: Long, val leaseId: Long, val billingMonth: String, val dueDate: String, val rawStatus: String, val roomId: Long, val roomName: String, val venueName: String, val tenantName: String, val tenantPhone: String, val total: Long, val paid: Long)
 
 data class DashboardSummary(

@@ -61,7 +61,12 @@ class AppRepository(private val db: AppDatabase) {
                         dueDate = BillingRules.dueDate(month, lease.dueDay).toString(),
                         createdAt = LocalDateTime.now().toString()
                     ))
-                    if (id > 0) dao.insertInvoiceItem(InvoiceItem(invoiceId = id, type = "RENT", title = "月租", amount = lease.monthlyRent))
+                    if (id > 0) {
+                        dao.insertInvoiceItem(InvoiceItem(invoiceId = id, type = "RENT", title = "月租", amount = lease.monthlyRent))
+                        if (lease.waterFee > 0) dao.insertInvoiceItem(InvoiceItem(invoiceId = id, type = "WATER", title = "水費", amount = lease.waterFee))
+                        if (lease.managementFee > 0) dao.insertInvoiceItem(InvoiceItem(invoiceId = id, type = "MANAGEMENT", title = "管理費", amount = lease.managementFee))
+                        if (lease.electricityFee > 0) dao.insertInvoiceItem(InvoiceItem(invoiceId = id, type = "ELECTRICITY", title = "電費", amount = lease.electricityFee))
+                    }
                 }
             }
         }

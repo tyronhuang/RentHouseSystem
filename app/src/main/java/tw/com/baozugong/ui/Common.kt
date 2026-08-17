@@ -13,6 +13,7 @@ import androidx.compose.ui.platform.LocalContext
 import java.time.LocalDate
 import java.text.NumberFormat
 import java.util.Locale
+import tw.com.baozugong.domain.PhoneRules
 
 fun money(value: Long): String = "NT$ ${NumberFormat.getIntegerInstance(Locale.TAIWAN).format(value)}"
 fun roomStatus(value:String)=when(value){"VACANT"->"空房";"RENTED"->"出租中";else->"停用"}
@@ -35,6 +36,21 @@ fun roomStatus(value:String)=when(value){"VACANT"->"空房";"RENTED"->"出租中
 }
 
 fun String.asLong():Long=trim().toLongOrNull()?:0
+
+@Composable
+fun MobilePhoneField(tail: String, onChange: (String) -> Unit, modifier: Modifier = Modifier) {
+    OutlinedTextField(
+        value = PhoneRules.formatTail(tail),
+        onValueChange = { onChange(PhoneRules.tailFromInput(it)) },
+        label = { Text("手機號碼") },
+        prefix = { Text("09") },
+        supportingText = { Text(if (PhoneRules.isCompleteTail(tail)) "格式：09xx-xxxxxx" else "請輸入後 8 碼") },
+        isError = tail.isNotEmpty() && !PhoneRules.isCompleteTail(tail),
+        singleLine = true,
+        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Phone),
+        modifier = modifier.fillMaxWidth()
+    )
+}
 
 @Composable
 fun DatePickerField(label: String, value: String, onChange: (String) -> Unit, modifier: Modifier = Modifier) {
