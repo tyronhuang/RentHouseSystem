@@ -6,6 +6,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.*
+import androidx.compose.ui.platform.LocalContext
+import java.time.LocalDate
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -30,3 +33,22 @@ fun roomStatus(value:String)=when(value){"VACANT"->"空房";"RENTED"->"出租中
 }
 
 fun String.asLong():Long=trim().toLongOrNull()?:0
+
+@Composable
+fun DatePickerField(label: String, value: String, onChange: (String) -> Unit, modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    val date = remember(value) { runCatching { LocalDate.parse(value) }.getOrElse { LocalDate.now() } }
+    OutlinedButton(
+        onClick = {
+            android.app.DatePickerDialog(context, { _, year, month, day ->
+                onChange(LocalDate.of(year, month + 1, day).toString())
+            }, date.year, date.monthValue - 1, date.dayOfMonth).show()
+        },
+        modifier = modifier.fillMaxWidth()
+    ) {
+        Column(Modifier.fillMaxWidth()) {
+            Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(value, style = MaterialTheme.typography.bodyLarge)
+        }
+    }
+}

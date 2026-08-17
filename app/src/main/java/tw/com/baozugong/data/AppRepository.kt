@@ -32,6 +32,13 @@ class AppRepository(private val db: AppDatabase) {
         dao.setRoomStatus(lease.roomId, RoomStatus.VACANT)
     }
 
+    suspend fun updateLease(value: Lease) {
+        require(LocalDate.parse(value.startDate) <= LocalDate.parse(value.endDate)) { "到期日不可早於起租日" }
+        require(value.monthlyRent > 0) { "月租必須大於 0" }
+        require(value.dueDay in 1..31) { "繳租日必須介於 1 到 31 日" }
+        dao.updateLease(value)
+    }
+
     suspend fun renewLease(oldLeaseId: Long, newEndDate: String) {
         db.withTransaction {
             val old = dao.lease(oldLeaseId) ?: return@withTransaction
