@@ -91,6 +91,9 @@ class AppRepository(private val db: AppDatabase) {
         dao.insertPayment(Payment(invoiceId = invoiceId, amount = amount, paidDate = date, method = method, note = note, createdAt = now, updatedAt = now))
     }
     suspend fun updatePayment(value: Payment) = dao.updatePayment(value.copy(updatedAt = currentTimestamp()))
+    suspend fun voidPayment(value: Payment) {
+        if (!value.voided) dao.updatePayment(value.copy(voided = true, voidedAt = currentTimestamp(), updatedAt = currentTimestamp()))
+    }
     suspend fun voidInvoice(invoiceId: Long) = dao.voidInvoice(invoiceId)
     suspend fun clearAll() = dao.clearAll()
     fun daoForBackup() = dao

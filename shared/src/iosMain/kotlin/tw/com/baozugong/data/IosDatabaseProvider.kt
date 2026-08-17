@@ -23,7 +23,7 @@ object IosDatabaseProvider {
             ?: error("無法建立 iOS 資料庫路徑")
 
         return Room.databaseBuilder<AppDatabase>(name = databasePath)
-            .addMigrations(MIGRATION_1_2)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
             .addCallback(SEED_CALLBACK)
             .setDriver(BundledSQLiteDriver())
             .setQueryCoroutineContext(Dispatchers.IO)

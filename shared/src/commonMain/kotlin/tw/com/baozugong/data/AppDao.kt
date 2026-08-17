@@ -44,7 +44,7 @@ interface AppDao {
         SELECT i.id,i.leaseId,i.billingMonth,i.dueDate,i.status rawStatus,l.roomId,r.name roomName,v.name venueName,
         t.name tenantName,t.phone tenantPhone,
         COALESCE((SELECT SUM(amount) FROM invoice_items x WHERE x.invoiceId=i.id),0) total,
-        COALESCE((SELECT SUM(amount) FROM payments p WHERE p.invoiceId=i.id),0) paid
+        COALESCE((SELECT SUM(amount) FROM payments p WHERE p.invoiceId=i.id AND p.voided=0),0) paid
         FROM invoices i JOIN leases l ON l.id=i.leaseId JOIN rooms r ON r.id=l.roomId
         JOIN venues v ON v.id=r.venueId JOIN tenants t ON t.id=l.tenantId
         ORDER BY i.billingMonth DESC,v.id,r.name

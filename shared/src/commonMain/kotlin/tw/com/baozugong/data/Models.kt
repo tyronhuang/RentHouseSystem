@@ -99,6 +99,8 @@ data class Payment(
     val note: String = "",
     val createdAt: String,
     val updatedAt: String,
+    val voided: Boolean = false,
+    val voidedAt: String? = null,
 )
 
 data class RoomListRow(val id: Long, val venueId: Long, val venueName: String, val name: String, val defaultRent: Long, val status: String, val note: String)

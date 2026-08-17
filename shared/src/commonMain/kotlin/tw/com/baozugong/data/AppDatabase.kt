@@ -10,7 +10,7 @@ import androidx.sqlite.execSQL
 
 @Database(
     entities = [Venue::class, RentalRoom::class, Tenant::class, Lease::class, Invoice::class, InvoiceItem::class, Payment::class],
-    version = 2,
+    version = 3,
     exportSchema = true,
 )
 @ConstructedBy(AppDatabaseConstructor::class)
@@ -28,6 +28,13 @@ internal val MIGRATION_1_2 = object : Migration(1, 2) {
         connection.execSQL("ALTER TABLE leases ADD COLUMN waterFee INTEGER NOT NULL DEFAULT 0")
         connection.execSQL("ALTER TABLE leases ADD COLUMN managementFee INTEGER NOT NULL DEFAULT 0")
         connection.execSQL("ALTER TABLE leases ADD COLUMN electricityFee INTEGER NOT NULL DEFAULT 0")
+    }
+}
+
+internal val MIGRATION_2_3 = object : Migration(2, 3) {
+    override fun migrate(connection: SQLiteConnection) {
+        connection.execSQL("ALTER TABLE payments ADD COLUMN voided INTEGER NOT NULL DEFAULT 0")
+        connection.execSQL("ALTER TABLE payments ADD COLUMN voidedAt TEXT DEFAULT NULL")
     }
 }
 
