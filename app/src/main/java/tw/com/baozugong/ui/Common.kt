@@ -6,6 +6,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.shape.CutCornerShape
 import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
 import java.time.LocalDate
@@ -25,7 +27,7 @@ fun roomStatus(value:String)=when(value){"VACANT"->"空房";"RENTED"->"出租中
 @Composable fun EmptyHint(text:String)=Box(Modifier.fillMaxWidth().padding(32.dp)){Text(text,color=MaterialTheme.colorScheme.onSurfaceVariant)}
 
 @Composable fun MetricCard(label:String,value:String,modifier:Modifier=Modifier) {
-    Card(modifier){Column(Modifier.padding(14.dp)){Text(label,style=MaterialTheme.typography.labelMedium,color=MaterialTheme.colorScheme.onSurfaceVariant);Spacer(Modifier.height(4.dp));Text(value,style=MaterialTheme.typography.titleLarge,fontWeight=FontWeight.Bold)}}
+    Card(modifier,shape=CutCornerShape(topEnd=14.dp,bottomStart=14.dp),colors=CardDefaults.cardColors(containerColor=MaterialTheme.colorScheme.surfaceVariant),border=BorderStroke(1.dp,MaterialTheme.colorScheme.outline.copy(alpha=0.7f))){Column(Modifier.padding(14.dp)){Text(label,style=MaterialTheme.typography.labelMedium,color=MaterialTheme.colorScheme.primary);Spacer(Modifier.height(4.dp));Text(value,style=MaterialTheme.typography.titleLarge,fontWeight=FontWeight.Bold)}}
 }
 
 @Composable fun FormField(value:String,onChange:(String)->Unit,label:String,modifier:Modifier=Modifier,numeric:Boolean=false) {

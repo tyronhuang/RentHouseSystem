@@ -15,6 +15,7 @@
 - CSV 收租報表
 - PBKDF2＋AES-GCM 加密完整備份及換機還原
 - 透過 Android Storage Access Framework 連結 Google Drive 資料夾，支援立即與每週自動加密備份
+- 可即時切換並保存明亮模式或霓虹青／洋紅配色的賽博暗黑模式
 
 ## 技術
 

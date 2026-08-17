@@ -12,10 +12,22 @@ import tw.com.baozugong.data.AppSettings
 import tw.com.baozugong.backup.CloudBackupState
 
 @Composable
-fun SettingsScreen(vm:AppViewModel,onExportBackup:(String)->Unit,onImportBackup:()->Unit,onExportCsv:()->Unit,cloudState:CloudBackupState,onLinkCloud:()->Unit,onCloudBackupNow:()->Unit,onSetCloudAuto:(Boolean)->Unit,onDisconnectCloud:()->Unit,onMessage:(String)->Unit) {
+fun SettingsScreen(vm:AppViewModel,onExportBackup:(String)->Unit,onImportBackup:()->Unit,onExportCsv:()->Unit,cloudState:CloudBackupState,onLinkCloud:()->Unit,onCloudBackupNow:()->Unit,onSetCloudAuto:(Boolean)->Unit,onDisconnectCloud:()->Unit,darkTheme:Boolean,onThemeChange:(Boolean)->Unit,onMessage:(String)->Unit) {
     var settings by remember{mutableStateOf(vm.settingsStore.get())};var editSettings by remember{mutableStateOf(false)};var passwordDialog by remember{mutableStateOf(false)};var clearStep by remember{mutableIntStateOf(0)}
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom=24.dp)) {
         ScreenTitle("設定與資料","所有資料只保存在這支手機")
+        SettingsSection("外觀模式") {
+            ListItem(
+                headlineContent={Text(if(darkTheme)"賽博暗黑" else "明亮模式")},
+                supportingContent={Text(if(darkTheme)"深藍黑介面搭配霓虹青與洋紅" else "清晰明亮的青綠科技介面")},
+                leadingContent={Text(if(darkTheme)"◈" else "◇",style=MaterialTheme.typography.headlineSmall,color=MaterialTheme.colorScheme.primary)},
+                trailingContent={Switch(darkTheme,{enabled->settings=settings.copy(themeMode=if(enabled)"DARK" else "LIGHT");vm.settingsStore.save(settings);onThemeChange(enabled)})}
+            )
+            Row(Modifier.fillMaxWidth().padding(horizontal=16.dp,vertical=8.dp),horizontalArrangement=Arrangement.spacedBy(8.dp)){
+                FilterChip(!darkTheme,{settings=settings.copy(themeMode="LIGHT");vm.settingsStore.save(settings);onThemeChange(false)},{Text("明亮")},Modifier.weight(1f))
+                FilterChip(darkTheme,{settings=settings.copy(themeMode="DARK");vm.settingsStore.save(settings);onThemeChange(true)},{Text("賽博暗黑")},Modifier.weight(1f))
+            }
+        }
         SettingsSection("房東與提醒") {
             ListItem(headlineContent={Text("房東稱呼")},trailingContent={Text(settings.landlordName)})
             ListItem(headlineContent={Text("租金提前提醒")},trailingContent={Text("${settings.rentReminderDays} 天")})
@@ -53,5 +65,5 @@ fun SettingsScreen(vm:AppViewModel,onExportBackup:(String)->Unit,onImportBackup:
 }
 
 @Composable private fun SettingsSection(title:String,content:@Composable ColumnScope.()->Unit){Text(title,Modifier.padding(start=16.dp,top=16.dp,bottom=6.dp),style=MaterialTheme.typography.titleMedium);Card(Modifier.fillMaxWidth().padding(horizontal=16.dp)){Column(content=content)}}
-@Composable private fun SettingsDialog(value:AppSettings,onDismiss:()->Unit,onSave:(AppSettings)->Unit){var name by remember{mutableStateOf(value.landlordName)};var rent by remember{mutableStateOf(value.rentReminderDays.toString())};var lease by remember{mutableStateOf(value.leaseReminderDays.toString())};val valid=name.isNotBlank()&&rent.toIntOrNull() in 0..30&&lease.toIntOrNull() in 1..365;AlertDialog(onDismissRequest=onDismiss,title={Text("提醒設定")},text={Column(verticalArrangement=Arrangement.spacedBy(8.dp)){FormField(name,{name=it},"房東稱呼");FormField(rent,{rent=it},"繳租日前幾天提醒",numeric=true);FormField(lease,{lease=it},"租約到期前幾天提醒",numeric=true)}},dismissButton={TextButton(onClick=onDismiss){Text("取消")}},confirmButton={Button(enabled=valid,onClick={onSave(AppSettings(name.trim(),rent.toInt(),lease.toInt()))}){Text("儲存")}})}
+@Composable private fun SettingsDialog(value:AppSettings,onDismiss:()->Unit,onSave:(AppSettings)->Unit){var name by remember{mutableStateOf(value.landlordName)};var rent by remember{mutableStateOf(value.rentReminderDays.toString())};var lease by remember{mutableStateOf(value.leaseReminderDays.toString())};val valid=name.isNotBlank()&&rent.toIntOrNull() in 0..30&&lease.toIntOrNull() in 1..365;AlertDialog(onDismissRequest=onDismiss,title={Text("提醒設定")},text={Column(verticalArrangement=Arrangement.spacedBy(8.dp)){FormField(name,{name=it},"房東稱呼");FormField(rent,{rent=it},"繳租日前幾天提醒",numeric=true);FormField(lease,{lease=it},"租約到期前幾天提醒",numeric=true)}},dismissButton={TextButton(onClick=onDismiss){Text("取消")}},confirmButton={Button(enabled=valid,onClick={onSave(AppSettings(name.trim(),rent.toInt(),lease.toInt(),value.themeMode))}){Text("儲存")}})}
 @Composable private fun ExportPasswordDialog(onDismiss:()->Unit,onSave:(String)->Unit){var password by remember{mutableStateOf("")};var confirm by remember{mutableStateOf("")};AlertDialog(onDismissRequest=onDismiss,title={Text("設定本次備份密碼")},text={Column(verticalArrangement=Arrangement.spacedBy(8.dp)){Text("還原時必須輸入相同密碼，請妥善保存。");FormField(password,{password=it},"備份密碼（至少 6 字元）");FormField(confirm,{confirm=it},"再次輸入密碼")}},dismissButton={TextButton(onClick=onDismiss){Text("取消")}},confirmButton={Button(enabled=password.length>=6&&password==confirm,onClick={onSave(password)}){Text("建立備份")}})}

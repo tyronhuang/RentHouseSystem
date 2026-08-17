@@ -1,6 +1,7 @@
 package tw.com.baozugong
 
 import android.Manifest
+import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -9,11 +10,17 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CutCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
+import androidx.core.view.WindowCompat
 import kotlinx.coroutines.launch
 import tw.com.baozugong.ui.*
 import java.time.LocalDateTime
@@ -22,23 +29,70 @@ class MainActivity : ComponentActivity() {
     private val vm by viewModels<AppViewModel>()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent { BaoZuGongTheme { MainApp(vm) } }
+        setContent {
+            var darkTheme by remember { mutableStateOf(vm.settingsStore.get().themeMode == "DARK") }
+            BaoZuGongTheme(darkTheme) { MainApp(vm, darkTheme, onThemeChange = { darkTheme = it }) }
+        }
     }
 }
 
-private val Green = Color(0xFF2D5B4E)
-private val Cream = Color(0xFFFFF8F0)
+private val LightColors = lightColorScheme(
+    primary = Color(0xFF006C71), onPrimary = Color.White,
+    secondary = Color(0xFF6247AA), tertiary = Color(0xFFB32668),
+    background = Color(0xFFF3FAFA), surface = Color(0xFFFBFFFF),
+    surfaceVariant = Color(0xFFE2F0F1), outline = Color(0xFF6F8B8D),
+    error = Color(0xFFB3261E)
+)
+
+private val CyberDarkColors = darkColorScheme(
+    primary = Color(0xFF00F5D4), onPrimary = Color(0xFF00201B),
+    primaryContainer = Color(0xFF004D46), onPrimaryContainer = Color(0xFF76FFE8),
+    secondary = Color(0xFFFF4ECD), onSecondary = Color(0xFF3A0030),
+    secondaryContainer = Color(0xFF5B164D), onSecondaryContainer = Color(0xFFFFD8F2),
+    tertiary = Color(0xFF8C7CFF), onTertiary = Color(0xFF16005E),
+    background = Color(0xFF050914), onBackground = Color(0xFFE3F7FF),
+    surface = Color(0xFF0B1220), onSurface = Color(0xFFE3F7FF),
+    surfaceVariant = Color(0xFF121E32), onSurfaceVariant = Color(0xFFB7C9D9),
+    outline = Color(0xFF2C7082), outlineVariant = Color(0xFF1B3E4D),
+    error = Color(0xFFFF5C7A), onError = Color(0xFF3F0012)
+)
 
 @Composable
-fun BaoZuGongTheme(content: @Composable () -> Unit) {
-    MaterialTheme(colorScheme = lightColorScheme(primary = Green, secondary = Color(0xFFF4B860), background = Cream, surface = Color.White, error = Color(0xFFB3261E)), content = content)
+fun BaoZuGongTheme(darkTheme: Boolean, content: @Composable () -> Unit) {
+    val colors = if (darkTheme) CyberDarkColors else LightColors
+    val view = LocalView.current
+    if (!view.isInEditMode) SideEffect {
+        val window = (view.context as Activity).window
+        window.statusBarColor = colors.background.toArgb()
+        window.navigationBarColor = colors.surface.toArgb()
+        WindowCompat.getInsetsController(window, view).apply {
+            isAppearanceLightStatusBars = !darkTheme
+            isAppearanceLightNavigationBars = !darkTheme
+        }
+    }
+    MaterialTheme(
+        colorScheme = colors,
+        typography = Typography(
+            headlineSmall = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp),
+            titleLarge = MaterialTheme.typography.titleLarge.copy(letterSpacing = 0.3.sp),
+            labelLarge = MaterialTheme.typography.labelLarge.copy(letterSpacing = 0.5.sp)
+        ),
+        shapes = Shapes(
+            extraSmall = CutCornerShape(topEnd = 4.dp, bottomStart = 4.dp),
+            small = CutCornerShape(topEnd = 7.dp, bottomStart = 7.dp),
+            medium = CutCornerShape(topEnd = 12.dp, bottomStart = 12.dp),
+            large = CutCornerShape(topEnd = 18.dp, bottomStart = 18.dp),
+            extraLarge = CutCornerShape(topEnd = 24.dp, bottomStart = 24.dp)
+        ),
+        content = content
+    )
 }
 
 enum class MainTab(val label: String) { HOME("總覽"), ROOMS("房源"), BILLS("收租"), PEOPLE("租務"), SETTINGS("設定") }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun MainApp(vm: AppViewModel) {
+private fun MainApp(vm: AppViewModel, darkTheme: Boolean, onThemeChange: (Boolean) -> Unit) {
     var tab by remember { mutableStateOf(MainTab.HOME) }
     var message by remember { mutableStateOf<String?>(null) }
     var exportPassword by remember { mutableStateOf<String?>(null) }
@@ -70,9 +124,10 @@ private fun MainApp(vm: AppViewModel) {
     LaunchedEffect(Unit) { if (android.os.Build.VERSION.SDK_INT >= 33) notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS) }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("包租公") }, colors = TopAppBarDefaults.topAppBarColors(containerColor = Cream)) },
+        containerColor = MaterialTheme.colorScheme.background,
+        topBar = { TopAppBar(title = { Text("包租公",fontWeight=FontWeight.Black,letterSpacing=2.sp,color=MaterialTheme.colorScheme.primary) }, colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)) },
         bottomBar = {
-            NavigationBar(containerColor = Cream) {
+            NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
                 MainTab.entries.forEach { item -> NavigationBarItem(selected = tab==item, onClick={tab=item}, icon={Text(when(item){MainTab.HOME->"⌂";MainTab.ROOMS->"屋";MainTab.BILLS->"$";MainTab.PEOPLE->"約";MainTab.SETTINGS->"⚙"})}, label={Text(item.label)}) }
             }
         },
@@ -101,6 +156,8 @@ private fun MainApp(vm: AppViewModel) {
                         cloudState.folderUri?.let { uri->runCatching{context.contentResolver.releasePersistableUriPermission(android.net.Uri.parse(uri),Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)} }
                         vm.cloudBackup.disconnect();cloudState=vm.cloudBackup.state();message="已解除 Google Drive 連結"
                     },
+                    darkTheme=darkTheme,
+                    onThemeChange=onThemeChange,
                     onMessage={message=it})
             }
         }
